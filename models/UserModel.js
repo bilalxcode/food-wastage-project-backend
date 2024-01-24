@@ -18,7 +18,16 @@ const UserSchema = mongoose.Schema(
             type : Number,
             required : true,
         },
+        isPaymentVerified: {
+            type: Boolean,
+            default: false, // Default value is false
+        },
+        userType: {
+            type: String,
+            enum: ["seller", "buyer", null], // 'seller', 'buyer', or null (default)
+            default: null, // Default value is null
+        },
     }
-)
+);
 
-export const User = mongoose.model('User', UserSchema)
+export const User = mongoose.model('User', UserSchema);

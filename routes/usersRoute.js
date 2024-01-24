@@ -66,6 +66,7 @@ router.post("/login", async (request, response) => {
         message: "Invalid credentials",
       });
     }
+    console.log("user after login",user);
 
     const isValidPassword = await bcrypt.compare(password, user.password);
 
@@ -77,9 +78,10 @@ router.post("/login", async (request, response) => {
 
     const token = jwt.sign({ id: user._id }, "secretKey", { expiresIn: "1h" });
 
+    // Inside your login route
     response.json({
       token,
-      user: { email: user.email, username: user.username },
+      user,
     });
   } catch (error) {
     console.log(error);
@@ -91,6 +93,19 @@ router.post("/payment", async (request, response) => {
   try {
     const paymentAmount = request.body.paymentAmount;
     const amountInCents = paymentAmount * 100;
+    // const userId = request.body.user.Id;
+
+    // // Update user properties in the database
+    // const updatedUser = await User.findByIdAndUpdate(
+    //   userId,
+    //   { isPaymentVerified: true, userType: "seller" },
+    //   { new: true } // Returns the updated user
+    // );
+
+    // console.log(updatedUser)
+    // if (!updatedUser) {
+    //   return response.status(404).json({ message: "User not found" });
+    // }
 
     // Perform payment processing with Stripe
     const session = await stripe.checkout.sessions.create({
@@ -112,11 +127,39 @@ router.post("/payment", async (request, response) => {
       cancel_url: "http://localhost:3000/cancel",
     });
 
-    // Send the session ID back to the client
+    // Send the session ID and updated user back to the client
     response.json({ session });
   } catch (error) {
     console.error(error);
     response.status(500).send({ message: "Internal server error" });
+  }
+});
+
+router.post("/verify-user", async (req, res) => {
+  console.log("request received");
+  try {
+    const userId = req.body.userId;
+    console.log(userId);
+    // Assuming you have a User model/schema
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update user properties
+    user.isPaymentVerified = true;
+    user.userType = "seller";
+
+    // Save the updated user
+    await user.save();
+    console.log(user);
+
+    // Send the updated user object in the response
+    res.json({ user });
+  } catch (error) {
+    console.error("Error verifying user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
