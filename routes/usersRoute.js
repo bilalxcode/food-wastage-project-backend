@@ -3,6 +3,9 @@ import { User } from "../models/UserModel.js";
 // import bcrypt from "bcrypt";
 import bcrypt from "bcryptjs";
 import stripeLib from "stripe";
+import multer from "multer"; // For handling file uploads
+import { Product } from "../models/ProductModal.js";
+import fs from "fs";
 
 const STRIPE_SECRET =
   "sk_test_51Obp44KAlnAzxnFU9PrEBv0K27IsOThelFXmUSTkJk7nhzQ0V20hHm75bDPLsYnPnwWs52TIzmz61rUn1U3uQxH500Ob1C6BIw";
@@ -66,7 +69,7 @@ router.post("/login", async (request, response) => {
         message: "Invalid credentials",
       });
     }
-    console.log("user after login",user);
+    console.log("user after login", user);
 
     const isValidPassword = await bcrypt.compare(password, user.password);
 
@@ -160,6 +163,104 @@ router.post("/verify-user", async (req, res) => {
   } catch (error) {
     console.error("Error verifying user:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// router.post("/get-user", async (req, res) => {
+//   try {
+//     const userId = req.body.userId;
+//     console.log(userId);
+//     // Search for the user in the database using the provided userId
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       console.log("user not sent", user);
+
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     console.log("user sent", user);
+
+//     res.status(200).json(user);
+//   } catch (error) {
+//     console.error("Error fetching user details: ", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
+
+router.post("/get-user", async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    console.log(userId);
+
+    // Search for the user in the database using the provided userId
+    const user = await User.findById(userId);
+
+    if (!user) {
+      console.log("user not sent", user);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Fetch the user's products
+    const userProducts = await Product.find({ user: userId });
+
+    // Combine user details and products in the response
+    const responseData = {
+      user: user,
+      products: userProducts,
+    };
+
+    console.log("user and products sent", responseData);
+
+    res.status(200).json(responseData);
+  } catch (error) {
+    console.error("Error fetching user details: ", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./uploads");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+router.post("/addProduct", upload.array("images[]"), async (req, res) => {
+  try {
+    // Extract form data from the request
+    const { name, price, expiryDate, description, userId } = req.body;
+
+    console.log(name, price, expiryDate, description, userId);
+    // Create an array of image URLs from the uploaded files
+    const images = req.files.map((file) => `/uploads/${file.filename}`);
+
+    // Assuming you have a user ID associated with the request (you may use JWT for authentication)
+    // const userId = "user_id_here"; // Replace with the actual user id
+
+    // Create a new product
+    const newProduct = new Product({
+      name,
+      price,
+      expiryDate: new Date(expiryDate), // Convert expiryDate to Date object
+      description,
+      images,
+      user: userId,
+    });
+
+    // Save the product to the database
+    await newProduct.save();
+
+    console.log("product added");
+    res.status(200).json({ message: "Product added successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
