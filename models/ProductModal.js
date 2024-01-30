@@ -9,6 +9,10 @@ const ProductSchema = mongoose.Schema({
     type: Number,
     required: true,
   },
+  expiryStatus: {
+    type: String,
+    required: true,
+  },
   expiryDate: {
     type: Date,
     required: true,
@@ -23,9 +27,9 @@ const ProductSchema = mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
 });
 
-export const Product = mongoose.model('Product', ProductSchema);
+export const Product = mongoose.model("Product", ProductSchema);

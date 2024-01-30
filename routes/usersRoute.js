@@ -234,9 +234,10 @@ const upload = multer({ storage: storage });
 router.post("/addProduct", upload.array("images[]"), async (req, res) => {
   try {
     // Extract form data from the request
-    const { name, price, expiryDate, description, userId } = req.body;
+    const { name, price, expiryDate, description, userId, expiryStatus } =
+      req.body;
 
-    console.log(name, price, expiryDate, description, userId);
+    console.log(name, price, expiryDate, description, userId, expiryStatus);
     // Create an array of image URLs from the uploaded files
     const images = req.files.map((file) => `/uploads/${file.filename}`);
 
@@ -247,6 +248,7 @@ router.post("/addProduct", upload.array("images[]"), async (req, res) => {
     const newProduct = new Product({
       name,
       price,
+      expiryStatus,
       expiryDate: new Date(expiryDate), // Convert expiryDate to Date object
       description,
       images,
@@ -256,11 +258,37 @@ router.post("/addProduct", upload.array("images[]"), async (req, res) => {
     // Save the product to the database
     await newProduct.save();
 
-    console.log("product added");
+    console.log("product added", newProduct);
     res.status(200).json({ message: "Product added successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post("/make-user-buyer", async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    // Find the user by ID and update the userType to 'buyer'
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { userType: "buyer" },
+      { new: true } // To get the updated user in the response
+    );
+
+    if (!updatedUser) {
+      console.log("error");
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Send the updated user object in the response
+    console.log("user type is buyer", updatedUser);
+
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error("Error making user a buyer:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
