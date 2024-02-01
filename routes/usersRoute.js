@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import stripeLib from "stripe";
 import multer from "multer"; // For handling file uploads
 import { Product } from "../models/ProductModal.js";
-import fs from "fs";
 
 const STRIPE_SECRET =
   "sk_test_51Obp44KAlnAzxnFU9PrEBv0K27IsOThelFXmUSTkJk7nhzQ0V20hHm75bDPLsYnPnwWs52TIzmz61rUn1U3uQxH500Ob1C6BIw";
@@ -292,4 +291,68 @@ router.post("/make-user-buyer", async (req, res) => {
   }
 });
 
+router.get("/get-products", async (req, res) => {
+  try {
+    // Fetch the user's products
+    const products = await Product.find();
+
+    // Combine user details and products in the response
+    const responseData = {
+      products: products,
+    };
+    res.status(200).json(responseData);
+    console.log(products);
+  } catch (error) {
+    console.error("Error fetching user details: ", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// update-cart endpoint
+// update-cart endpoint
+router.post("/buy-product", async (request, response) => {
+  try {
+    const paymentAmount = request.body.paymentAmount;
+    const amountInCents = paymentAmount * 100;
+
+    // Perform payment processing with Stripe
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "pkr",
+            product_data: {
+              name: "Buy Product",
+            },
+            unit_amount: amountInCents,
+          },  
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "http://localhost:3000/buyer-dashboard",
+      cancel_url: "http://localhost:3000/buyer-dashboard",
+    });
+
+    // Send the session ID and updated user back to the client
+    response.json({ session });
+  } catch (error) {
+    console.error(error);
+    response.status(500).send({ message: "Internal server error" });
+  }
+});
+
+router.delete('/delete-all-products', async (req, res) => {
+  try {
+    // Use Mongoose to delete all documents in the Product collection
+    const result = await Product.deleteMany({});
+
+    // Send a response indicating success
+    res.status(200).json({ message: 'All products deleted successfully', result });
+  } catch (error) {
+    // Handle errors and send an error response
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 export default router;
