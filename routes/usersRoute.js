@@ -322,7 +322,7 @@ router.post("/buy-product", async (request, response) => {
           price_data: {
             currency: "pkr",
             product_data: {
-              name: "Buy Product",
+              name: "Your Order",
             },
             unit_amount: amountInCents,
           },  
