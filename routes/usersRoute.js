@@ -325,7 +325,7 @@ router.post("/buy-product", async (request, response) => {
               name: "Your Order",
             },
             unit_amount: amountInCents,
-          },  
+          },
           quantity: 1,
         },
       ],
@@ -342,17 +342,19 @@ router.post("/buy-product", async (request, response) => {
   }
 });
 
-router.delete('/delete-all-products', async (req, res) => {
+router.delete("/delete-all-products", async (req, res) => {
   try {
     // Use Mongoose to delete all documents in the Product collection
     const result = await Product.deleteMany({});
 
     // Send a response indicating success
-    res.status(200).json({ message: 'All products deleted successfully', result });
+    res
+      .status(200)
+      .json({ message: "All products deleted successfully", result });
   } catch (error) {
     // Handle errors and send an error response
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 export default router;
